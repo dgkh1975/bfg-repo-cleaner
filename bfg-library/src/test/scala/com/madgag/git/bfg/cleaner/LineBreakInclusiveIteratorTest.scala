@@ -20,8 +20,6 @@
 
 package com.madgag.git.bfg.cleaner
 
-import com.madgag.git.bfg.cleaner.BlobTextModifier._
-import org.apache.commons.text.StringEscapeUtils
 import org.apache.commons.text.StringEscapeUtils.escapeJava
 import org.scalatest.Inspectors._
 import org.scalatest._
@@ -29,10 +27,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 import java.io.{ByteArrayInputStream, InputStreamReader, Reader}
-import java.math.BigInteger
 import java.nio.charset.StandardCharsets.UTF_8
-import java.util.regex.Pattern
-import scala.collection.BitSet
 import scala.util.matching.Regex
 
 class LineBreakInclusiveIteratorTest extends AnyFlatSpec with Matchers with OptionValues {

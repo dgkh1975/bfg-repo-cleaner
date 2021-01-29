@@ -24,7 +24,7 @@ import com.madgag.git._
 import com.madgag.git.bfg.GitUtil._
 import com.madgag.git.bfg.cleaner.ObjectIdSubstitutor._
 import com.madgag.git.bfg.cleaner.protection.ProtectedObjectCensus
-import com.madgag.git.bfg.model.{BlobFileMode, FileName, RegularFile, TreeBlobEntry}
+import com.madgag.git.bfg.model.{FileName, RegularFile, TreeBlobEntry}
 import com.madgag.git.test._
 import com.madgag.textmatching._
 import org.apache.commons.io.FilenameUtils
@@ -34,10 +34,8 @@ import org.eclipse.jgit.util.RawParseUtils
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-import java.io.{ByteArrayInputStream, StringReader}
+import java.io.StringReader
 import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
-import java.nio.charset.StandardCharsets.UTF_8
 import java.util.Properties
 import java.util.regex.Pattern._
 import scala.PartialFunction.condOpt
@@ -132,19 +130,13 @@ class RepoRewriteSpec extends AnyFlatSpec with Matchers {
     val filename = s"$fileNamePrefix-ORIGINAL.$fileNamePostfix"
     val beforeFile = s"$parentPath/$filename"
     val afterFile = s"$parentPath/$fileNamePrefix-MODIFIED-$beforeAndAfter.$fileNamePostfix"
-    val dirtyFile = repo.resolve(s"master:$beforeFile")
+    // val dirtyFile = repo.resolve(s"master:$beforeFile")
 
     val blobTextModifier = new BlobTextModifier {
       def lineCleanerFor(entry: TreeBlobEntry) = Some(quote(before).r --> (_ => after))
 
       val threadLocalObjectDBResources = repo.getObjectDatabase.threadLocalResources
     }
-
-    val lineClean: Some[String => String] =
-      blobTextModifier.lineCleanerFor(TreeBlobEntry(FileName(filename), RegularFile, dirtyFile))
-
-    lineClean.get("\\r\\n")
-    lineClean.get(null)
 
     RepoRewriter.rewrite(repo, ObjectIdCleaner.Config(ProtectedObjectCensus.None, treeBlobsCleaners = Seq(blobTextModifier)))
 
@@ -154,10 +146,10 @@ class RepoRewriteSpec extends AnyFlatSpec with Matchers {
     expectedFile should not be null
 
     implicit val threadLocalObjectReader = repo.getObjectDatabase.threadLocalResources.reader()
-    val dirty = dirtyFile.open.getBytes
+    // val dirty = dirtyFile.open.getBytes
     val cleaned = cleanedFile.open.getBytes
     val expected = expectedFile.open.getBytes
-    val dirtyStr = new String(dirty)
+    // val dirtyStr = new String(dirty)
     val cleanedStr = new String(cleaned)
     val expectedStr = new String(expected)
 
