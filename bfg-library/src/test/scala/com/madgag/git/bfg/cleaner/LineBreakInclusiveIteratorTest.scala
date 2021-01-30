@@ -29,6 +29,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 import java.io.{ByteArrayInputStream, InputStreamReader, Reader}
+import java.math.BigInteger
 import java.nio.charset.StandardCharsets.UTF_8
 import java.util.regex.Pattern
 import scala.collection.BitSet
@@ -42,8 +43,9 @@ class LineBreakInclusiveIteratorTest extends AnyFlatSpec with Matchers with Opti
     forAll(3 to text.length + 1) { bufferSize =>
       testThis(text, new InputStreamReader(new ByteArrayInputStream(text.getBytes(UTF_8))), bufferSize)
 
-      for (reader <- PathologicalStringReader.allPossible(text)) {
-        // testThis(text, reader, bufferSize)
+      val pathReaders: Iterable[PathologicalStringReader] = PathologicalStringReader.allPossible(text)
+      for (reader <- pathReaders) {
+        testThis(text, reader, bufferSize)
       }
     }
   }
@@ -62,10 +64,11 @@ class LineBreakInclusiveIteratorTest extends AnyFlatSpec with Matchers with Opti
 
   it should "handle the empty string" in splittingLinesOf("")
   it should "handle a simple string with no newlines" in splittingLinesOf("foo")
-  it should "split on Windows newlines" in splittingLinesOf("Foo\r\n\r\nMoo")
+  it should "split on Windows newlines" in splittingLinesOf("Ab\r\n\r\nCd")
   it should "split on UNIX newlines" in splittingLinesOf("Bar\n\nBoo")
   it should "split on Windows newlines at the end of the data" in splittingLinesOf("Foo\r\n\r\n")
   it should "split on UNIX newlines at the end of the data" in splittingLinesOf("Bar\n\n")
+  it should "split on a reasonably long example" in splittingLinesOf("\n\r\nabc\r\nc\n\nfr\n")
 
   it should "return only one line (empty!) for the empty string" in {
     boof("") shouldBe Seq("")
@@ -130,11 +133,18 @@ class LineBreakInclusiveIteratorTest extends AnyFlatSpec with Matchers with Opti
 
   object PathologicalStringReader {
     def allPossible(text: String): Iterable[PathologicalStringReader] = {
-      require(text.length <= 9)
-      for (i <- 0 until 1 << text.length) yield {
-        val breakIndicies = BitSet(i).to(Seq)
+      require(text.length < Integer.SIZE)
+      for (i <- 0 until (1 << (text.length-1))) yield {
+        val breakIndicies: Seq[Int] = (0 to text.length).filter(bitIndex => (i & (1L << bitIndex)) != 0).map(_ + 1)
+
+        val segmentBounds = (0 +: breakIndicies).zip(breakIndicies :+ text.length)
         val segments: Seq[String] =
-          breakIndicies.zip(breakIndicies.tail).map { case (start, end) => text.substring(start, end) }
+          segmentBounds.map { case (start, end) => text.substring(start, end) }
+
+        // println(s"breakIndicies=${breakIndicies.mkString(",")}\tsegmentBounds=${segmentBounds.mkString(",")}\tsegments=${segments.mkString(",")}")
+
+        assert(segments.mkString == text)
+
         new PathologicalStringReader(segments)
       }
     }
